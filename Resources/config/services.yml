@@ -1,0 +1,12 @@
+parameters:
+    bangpound_console.application.class: Bangpound\Bundle\ConsoleBundle\Console\Application
+
+services:
+    bangpound_console.application:
+        class: %bangpound_console.application.class%
+        arguments:
+            - @service_container
+            - Symfony
+            - "@=constant('Symfony\\\Component\\\HttpKernel\\\Kernel::VERSION') ~ ' ' ~ parameter('kernel.name') ~ '/' ~ parameter('kernel.environment') ~ (parameter('kernel.debug') ? '/debug' : '')"
+        calls:
+            - [ setDispatcher, [ @event_dispatcher ] ]
