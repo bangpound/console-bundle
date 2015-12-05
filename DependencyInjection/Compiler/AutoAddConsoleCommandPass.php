@@ -3,8 +3,8 @@
 namespace Bangpound\Bundle\ConsoleBundle\DependencyInjection\Compiler;
 
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
@@ -34,6 +34,12 @@ class AutoAddConsoleCommandPass implements CompilerPassInterface
      */
     public function process(ContainerBuilder $container)
     {
+        if (!$container->hasParameter('bangpound_console.default_application_id')) {
+            return;
+        }
+        $count = 0;
+        $defaultApplicationId = $container->getParameter('bangpound_console.default_application_id');
+
         // Identify classes of already tagged Command services
         // so this pass does not create additional service definitions
         // for them.
@@ -68,13 +74,26 @@ class AutoAddConsoleCommandPass implements CompilerPassInterface
 
                 $r = new \ReflectionClass($class);
                 if ($r->isSubclassOf(self::COMMAND_CLASS) && !$r->isAbstract() && !$r->getConstructor()->getNumberOfRequiredParameters()) {
-                    $definition = new Definition($class);
-                    $definition->addTag('console.command');
+                    $name = Container::underscore(preg_replace('/Command/', '', $r->getShortName()));
+                    $name = strtolower(str_replace('\\', '_', $name));
+
+                    if (!$bundle->getContainerExtension()) {
+                        $alias = preg_replace('/Bundle$/', '', $bundle->getName());
+                        $alias = Container::underscore($alias);
+                    } else {
+                        $alias = $bundle->getContainerExtension()->getAlias();
+                    }
+
+                    $id = $alias.'.command.'.$name;
+                    if ($container->hasDefinition($id)) {
+                        $id = sprintf('%s_%d', hash('sha256', $file), ++$count);
+                    }
+
+                    $definition = $container->register($id, $r->getName());
+                    $definition->addTag('console.command', ['application' => $defaultApplicationId]);
                     if ($r->isSubclassOf('Symfony\\Component\\DependencyInjection\\ContainerAwareInterface')) {
                         $definition->addMethodCall('setContainer', [new Reference('service_container')]);
                     }
-                    $id = 'bangpound_console.command.'.strtolower(str_replace('\\', '_', $class));
-                    $container->setDefinition($id, $definition);
                 }
             }
         }
