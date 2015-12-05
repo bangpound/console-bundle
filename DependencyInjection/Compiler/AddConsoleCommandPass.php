@@ -12,10 +12,12 @@ class AddConsoleCommandPass implements CompilerPassInterface
     {
         $commandServices = $container->findTaggedServiceIds('console.command');
 
-        $definition = $container->getDefinition('bangpound_console.application');
-
         foreach ($commandServices as $id => $tags) {
-            $definition->addMethodCall('add', [new Reference($id)]);
+            foreach ($tags as $attributes) {
+                $applicationId = isset($attributes['application']) ? $attributes['application'] : 'bangpound_console.application';
+                $definition = $container->getDefinition($applicationId);
+                $definition->addMethodCall('add', [new Reference($id)]);
+            }
         }
     }
 }

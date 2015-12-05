@@ -22,6 +22,10 @@ class BangpoundConsoleExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
+        if ($this->isConfigEnabled($container, $config['auto_register'])) {
+            $container->setParameter('bangpound_console.default_application_id', $config['auto_register']['application']);
+        }
+
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('services.yml');
     }
