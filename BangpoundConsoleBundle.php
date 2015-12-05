@@ -21,10 +21,8 @@ class BangpoundConsoleBundle extends Bundle
     {
         $config = $container->getCompilerPassConfig();
         $passes = $config->getBeforeOptimizationPasses();
-
         $pass = new AutoAddConsoleCommandPass($this->kernel->getBundles());
         array_unshift($passes, $pass);
-
         $config->setBeforeOptimizationPasses($passes);
 
         $container->addCompilerPass(new AddConsoleCommandPass());
